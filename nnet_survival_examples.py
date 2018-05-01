@@ -296,20 +296,26 @@ y_train=np.floor(y_train/2.)
 y_test=np.floor(y_test/2.)
 
 #Create simulated survival data, with higher digits having shorter average survival
-sampleSize = 60000
+sampleSizeTrain = 60000
+sampleSizeTest = 10000
 np.random.seed(0)
 beta = 0.9
 lambdaT = 365./np.log(2)
 lambdaC = 2*365./np.log(2)
 trueTime = np.random.exponential(scale = lambdaT * np.exp(-(beta*y_train)),
-	size=sampleSize)
-censoringTime = np.random.exponential(scale = lambdaC, size=sampleSize)
+	size=sampleSizeTrain)
+censoringTime = np.random.exponential(scale = lambdaC, size=sampleSizeTrain)
 time = np.minimum(trueTime, censoringTime)
 event = (time == trueTime)*1.
 
+trueTimeTest = np.random.exponential(scale = lambdaT * np.exp(-(beta*y_test)),
+	size=sampleSizeTest)
+censoringTimeTest = np.random.exponential(scale = lambdaC, size=sampleSizeTest)
+timeTest = np.minimum(trueTimeTest, censoringTimeTest)
+eventTest = (timeTest == trueTimeTest)*1.
+
 #Convert event data to array format
-#breaks=np.arange(0,1000,100)
-breaks=np.concatenate((np.arange(0,200,10),np.arange(200,1001,50)))
+breaks=np.concatenate((np.arange(0,200,10),np.arange(200,1001,25)))
 n_intervals=len(breaks)-1
 timegap = breaks[1:] - breaks[:-1]
 y_train_array=nnet_survival.make_surv_array(time,event,breaks)
@@ -321,14 +327,23 @@ model.add(Conv2D(32, kernel_size=(3, 3),
                  input_shape=input_shape))
 model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Dropout(0.25))
 model.add(Flatten())
 model.add(Dense(128, activation='relu'))
-model.add(Dense(n_intervals, kernel_initializer='zeros', bias_initializer='zeros'))
-model.add(Activation('sigmoid'))
+model.add(Dropout(0.5))
+prop_hazards=0
+if prop_hazards:
+	model.add(Dense(1, use_bias=0, kernel_initializer='zeros'))
+	model.add(nnet_survival.PropHazards(n_intervals))
+else:
+	model.add(Dense(n_intervals, kernel_initializer='zeros', bias_initializer='zeros'))
+	model.add(Activation('sigmoid'))
 model.compile(loss=nnet_survival.surv_likelihood(n_intervals), optimizer=optimizers.RMSprop())
-history=model.fit(x_train, y_train_array, batch_size=64, epochs=3, verbose=1)
+early_stopping = EarlyStopping(monitor='loss', patience=1)
+history=model.fit(x_train, y_train_array, batch_size=64, epochs=20, verbose=1, callbacks=[early_stopping])
 y_pred=model.predict_proba(x_train,verbose=0)
 
+#Training set results
 kmf = KaplanMeierFitter()
 matplotlib.style.use('default')
 actual = []
@@ -349,7 +364,32 @@ plt.legend(['0-1: Actual','0-1: Predicted',
 	'4-5: Actual','4-5: Predicted',
 	'6-7: Actual','6-7: Predicted',
 	'8-9: Actual','8-9: Predicted'])
-plt.title('MNIST digits, 5 classes. Higher digit = shorter survival.')
+plt.title('Training set. Higher digit = shorter survival.')
+plt.show()
+
+#Test set results
+y_pred=model.predict_proba(x_test,verbose=0)
+kmf = KaplanMeierFitter()
+matplotlib.style.use('default')
+actual = []
+predicted = []
+for i in range(num_classes):
+	kmf.fit(timeTest[y_test==i], event_observed=eventTest[y_test==i])
+	actual.append(plt.plot(kmf.survival_function_.index.values, kmf.survival_function_.KM_estimate,ls='--',c='C'+str(i)))
+	y_pred_class_mean = np.mean(y_pred[np.where(y_test==i)[0],:],axis=0)
+	predicted.append(plt.plot(breaks,np.concatenate(([1],np.cumprod(y_pred_class_mean))),ls='-',c='C'+str(i)))
+plt.xticks(np.arange(0, 1000.0001, 200))
+plt.yticks(np.arange(0, 1.0001, 0.125))
+plt.xlim([0,1000])
+plt.ylim([0,1])
+plt.xlabel('Follow-up time (days)')
+plt.ylabel('Proportion surviving')
+plt.legend(['0-1: Actual','0-1: Predicted',
+	'2-3: Actual','2-3: Predicted',
+	'4-5: Actual','4-5: Predicted',
+	'6-7: Actual','6-7: Predicted',
+	'8-9: Actual','8-9: Predicted'])
+plt.title('Test set. Higher digit = shorter survival.')
 plt.show()
 
 
