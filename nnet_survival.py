@@ -69,6 +69,20 @@ def make_surv_array(t,f,breaks):
       y_train[i,0:n_intervals] = 1.0*(t[i]>=breaks_midpoint) #if censored and lived more than half-way through interval, give credit for surviving the interval.
   return y_train
 
+def nnet_pred_surv(y_pred, breaks, fu_time):
+#Predicted survival probability from Nnet-survival model
+#Inputs are Numpy arrays.
+#y_pred: Rectangular array, each individual's conditional probability of surviving each time interval
+#breaks: Break-points for time intervals used for Nnet-survival model, starting with 0
+#fu_time: Follow-up time point at which predictions are needed
+#
+#Returns: predicted survival probability for each individual at specified follow-up time
+  y_pred=np.cumprod(y_pred, axis=1)
+  pred_surv = []
+  for i in range(y_pred.shape[0]):
+    pred_surv.append(np.interp(fu_time,breaks[1:],y_pred[i,:]))
+  return np.array(pred_surv)
+
 class PropHazards(Layer):
 
     def __init__(self, output_dim, **kwargs):

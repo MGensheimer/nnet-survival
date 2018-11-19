@@ -1,4 +1,4 @@
-## A Simple Discrete-Time Survival Model using Neural Networks
+## Nnet-survival: A Simple Discrete-Time Survival Model using Neural Networks
 
 Michael F. Gensheimer and Balasubramanian Narasimhan  
 Stanford University  
@@ -6,11 +6,13 @@ mgens@stanford.edu
 
 [Link to preprint on Arxiv.org](https://arxiv.org/abs/1805.00917)
 
-## Files
+## Selectd files
 
-[nnet_survival.py: Contains neural network survival model functions](nnet_survival.py)
+[nnet_survival.py: Contains Nnet-survival functions](nnet_survival.py)
 
-[nnet_survival_examples.py: Examples of neural network survival model](nnet_survival_examples.py)
+[nnet_survival_examples.py: Examples of use of Nnet-survival](nnet_survival_examples.py)
+
+[support_study.py: Application of Nnet-survival to SUPPORT study data](support_study.py)
 
 [Issues with Brown et al. 1997 loss function](brown1997_loss_function_example.md)
 
@@ -103,5 +105,10 @@ The model has good agreement with the true survival distribution:
 
 ![one predictor figure](one_predictor.png)
 
+It is easy to output a predicted survival curve for an individual, or a predicted survival probability at a specific follow-up time. For instance, print the predicted survival probability for the 100th individual at a follow-up time of 30 days:
 
+```python
+pred_surv = nnet_survival.nnet_pred_surv(model.predict_proba(x_train,verbose=0), breaks, 30)
+print(pred_surv[99])
+```
 

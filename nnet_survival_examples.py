@@ -1,7 +1,7 @@
 #nnet_survival_examples.py
 
 #Examples of neural network survival model with simulated data
-#Designed to be run interactively. Go to the directory containing nnet_survival.py and then start Python (or add that directory to Python path).
+#Meant to be run interactively. Go to the directory containing nnet_survival.py and then start Python (or add that directory to Python path).
 
 #Author: Michael Gensheimer, Stanford University, michael.gensheimer@gmail.com
 #Tested with Python version 3.6, Keras version 2 (using TensorFlow backend)
@@ -22,6 +22,8 @@ import math
 from lifelines import KaplanMeierFitter
 from lifelines import CoxPHFitter
 from lifelines.utils import concordance_index
+from sklearn.preprocessing import StandardScaler
+from scipy import stats
 
 import nnet_survival
 
@@ -42,9 +44,11 @@ else:
 	n_intervals=len(breaks)-1
 	timegap = breaks[1:] - breaks[:-1]
  
+
 ##################################################################
 #Flexible model (non-proportional hazards).
 #All pts with same exponential survival distribution, no censoring
+#Not described in paper.
 
 halflife1 = 365.
 n_samples=1000
@@ -65,6 +69,12 @@ early_stopping = EarlyStopping(monitor='loss', patience=2)
 history=model.fit(x_train, y_train, batch_size=256, epochs=100000, callbacks=[early_stopping])
 y_pred=model.predict_proba(x_train,verbose=0)
 
+#Example of finding model-predicted survival probability.
+#Predicted survival prob. for first individual at follow-up time of 30 days:
+pred_surv = nnet_survival.nnet_pred_surv(model.predict_proba(x_train,verbose=0), breaks, 30)
+print(pred_surv[0])
+
+#Plot predicted vs. actual survival
 kmf = KaplanMeierFitter()
 kmf.fit(t, event_observed=f)
 plt.plot(breaks,np.concatenate(([1],np.cumprod(y_pred[0,:]))),'bo-')
@@ -74,9 +84,11 @@ plt.ylabel('Proportion surviving')
 plt.title('All patients from same survival distribution, no censoring. Actual=black, predicted=blue.')
 plt.show()
 
+
 ############################################################################
 #Flexible model (non-proportional hazards).
 #All pts with same exponential survival distribution, some patients censored
+#Not described in paper.
 
 halflife1 = 365.*2
 n_samples=1000
@@ -108,9 +120,11 @@ plt.ylabel('Proportion surviving')
 plt.title('All patients from same survival distribution, some censored. Actual=black, predicted=blue.')
 plt.show()
 
+
 ########################################################
 #Flexible model (non-proportional hazards).
 #some patients censored, one discrete predictor variable
+#Described in paper.
 
 halflife1 = 200
 halflife2 = 400
@@ -154,9 +168,11 @@ plt.ylabel('Proportion surviving')
 plt.title('One covariate. Actual=black, predicted=blue/red.')
 plt.show()
 
+
 ##########################################################
 #Proportional hazards model with flexible baseline hazard:
 #One binary predictor variable
+#Not described in paper.
 
 breaks=np.arange(0,5000,50)
 n_intervals=len(breaks)-1
@@ -218,9 +234,11 @@ print(nn_coef)
 print('Neural network hazard ratio:')
 print(np.exp(nn_coef))
 
+
 ##########################################################
 #Proportional hazards model with flexible baseline hazard:
 #Multiple variables, mix of discrete and continuous
+#Not described in paper.
 
 breaks=np.arange(0.,365.*5,365./8)
 n_intervals=len(breaks)-1
@@ -228,7 +246,7 @@ timegap = breaks[1:] - breaks[:-1]
 
 sampleSize = 10000
 
-np.random.seed(12345)
+np.random.seed(1)
 
 beta1 = -.015
 beta2 = .2
@@ -256,17 +274,18 @@ model.add(nnet_survival.PropHazards(n_intervals))
 model.compile(loss=nnet_survival.surv_likelihood(n_intervals), optimizer=optimizers.RMSprop())
 #model.summary()
 early_stopping = EarlyStopping(monitor='loss', patience=2)
-history=model.fit(x_train, y_train, batch_size=16, epochs=1000, callbacks=[early_stopping])
+history=model.fit(x_train, y_train, batch_size=64, epochs=1000, callbacks=[early_stopping])
 #y_pred=model.predict_proba(x_train,verbose=0)
 print('Neural net coefficients are close to beta coefficients used to generate the data distribution.')
 print(model.get_weights()[0])
 
 
 ###################################################################################
-#Flexible model: "Real" neural network using MNIST data
-#Adapted from https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
-#For this example, using 5 groups of digits: 0-1, 2-3, 4-5, 6-7, 8-9
-#Higher digits have shorter average survival. Task: Given an image of a digit, predict survival curve.
+#Flexible model: Convolutional neural network using MNIST data
+#Uses some code from https://github.com/keras-team/keras/blob/master/examples/mnist_cnn.py
+#For this example, we use images of the handwritten numbers 0 through 4.
+#Larger numbers have shorter average survival. Task: Given an image of a number, predict survival curve.
+#Described in paper.
 
 import keras
 from keras.datasets import mnist
@@ -279,31 +298,36 @@ img_rows, img_cols = 28, 28
 
 (x_train, y_train), (x_test, y_test) = mnist.load_data()
 if K.image_data_format() == 'channels_first':
-    x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols)
-    x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
-    input_shape = (1, img_rows, img_cols)
+	x_train = x_train.reshape(x_train.shape[0], 1, img_rows, img_cols)
+	x_test = x_test.reshape(x_test.shape[0], 1, img_rows, img_cols)
+	input_shape = (1, img_rows, img_cols)
 else:
-    x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 1)
-    x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1)
-    input_shape = (img_rows, img_cols, 1)
+	x_train = x_train.reshape(x_train.shape[0], img_rows, img_cols, 1)
+	x_test = x_test.reshape(x_test.shape[0], img_rows, img_cols, 1)
+	input_shape = (img_rows, img_cols, 1)
+
 x_train = x_train.astype('float32')
 x_test = x_test.astype('float32')
 x_train /= 255
 x_test /= 255
 
-#condense from 10 to 5 classes
-y_train=np.floor(y_train/2.)
-y_test=np.floor(y_test/2.)
+#Only keep numbers 0-4
+x_train = x_train[y_train<5, :, :, :]
+x_test = x_test[y_test<5, :, :, :]
+y_train = y_train[y_train<5]
+y_test = y_test[y_test<5]
 
-#Create simulated survival data, with higher digits having shorter average survival
-sampleSizeTrain = 60000
-sampleSizeTest = 10000
+#Create simulated survival data, with higher numbers having shorter average survival
+sampleSizeTrain = x_train.shape[0]
+sampleSizeTest = x_test.shape[0]
 np.random.seed(0)
 beta = 0.9
 lambdaT = 365./np.log(2)
 lambdaC = 2*365./np.log(2)
 trueTime = np.random.exponential(scale = lambdaT * np.exp(-(beta*y_train)),
 	size=sampleSizeTrain)
+#median surv is: 365.*np.exp(-beta*np.array([0,1,2,3,4]))
+#[365., 148.39792581,  60.3340942 ,  24.53001215, 9.97315869]
 censoringTime = np.random.exponential(scale = lambdaC, size=sampleSizeTrain)
 time = np.minimum(trueTime, censoringTime)
 event = (time == trueTime)*1.
@@ -315,12 +339,21 @@ timeTest = np.minimum(trueTimeTest, censoringTimeTest)
 eventTest = (timeTest == trueTimeTest)*1.
 
 #Convert event data to array format
-breaks=np.concatenate((np.arange(0,200,10),np.arange(200,1001,25)))
+
+halflife=365.*0.7
+breaks=-np.log(1-np.arange(0.0,0.96,0.05))*halflife/np.log(2) 
+#breaks=np.concatenate((np.arange(0,200,10),np.arange(200,1001,25)))
+
 n_intervals=len(breaks)-1
 timegap = breaks[1:] - breaks[:-1]
 y_train_array=nnet_survival.make_surv_array(time,event,breaks)
 
 #Train model
+from numpy.random import seed
+seed(1)
+from tensorflow import set_random_seed
+set_random_seed(1)
+
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3),
                  activation='relu',
@@ -329,8 +362,7 @@ model.add(Conv2D(64, (3, 3), activation='relu'))
 model.add(MaxPooling2D(pool_size=(2, 2)))
 model.add(Dropout(0.25))
 model.add(Flatten())
-model.add(Dense(128, activation='relu'))
-model.add(Dropout(0.5))
+model.add(Dense(4, activation='relu'))
 prop_hazards=0
 if prop_hazards:
 	model.add(Dense(1, use_bias=0, kernel_initializer='zeros'))
@@ -338,12 +370,21 @@ if prop_hazards:
 else:
 	model.add(Dense(n_intervals, kernel_initializer='zeros', bias_initializer='zeros'))
 	model.add(Activation('sigmoid'))
-model.compile(loss=nnet_survival.surv_likelihood(n_intervals), optimizer=optimizers.RMSprop())
-early_stopping = EarlyStopping(monitor='loss', patience=1)
-history=model.fit(x_train, y_train_array, batch_size=64, epochs=20, verbose=1, callbacks=[early_stopping])
-y_pred=model.predict_proba(x_train,verbose=0)
+
+model.compile(loss=nnet_survival.surv_likelihood(n_intervals), optimizer=optimizers.Adam())
+early_stopping = EarlyStopping(monitor='loss', patience=50)
+history=model.fit(x_train, y_train_array, batch_size=64, epochs=10000, verbose=1, callbacks=[early_stopping])
 
 #Training set results
+y_pred=model.predict_proba(x_train,verbose=0)
+
+#discrimination (C-index)
+oneyr_surv=np.cumprod(y_pred[:,0:np.nonzero(breaks>365)[0][0]], axis=1)[:,-1]
+print(concordance_index(time,oneyr_surv,event))
+
+#calibration plot
+days_plot = 365*2
+plt.subplot(1, 2, 1)
 kmf = KaplanMeierFitter()
 matplotlib.style.use('default')
 actual = []
@@ -351,24 +392,36 @@ predicted = []
 for i in range(num_classes):
 	kmf.fit(time[y_train==i], event_observed=event[y_train==i])
 	actual.append(plt.plot(kmf.survival_function_.index.values, kmf.survival_function_.KM_estimate,ls='--',c='C'+str(i)))
-	y_pred_class_mean = np.mean(y_pred[np.where(y_train==i)[0],:],axis=0)
-	predicted.append(plt.plot(breaks,np.concatenate(([1],np.cumprod(y_pred_class_mean))),ls='-',c='C'+str(i)))
-plt.xticks(np.arange(0, 1000.0001, 200))
+	pred_surv=np.mean(np.cumprod(y_pred[y_train==i,:], axis=1),axis=0)
+	predicted.append(plt.plot(breaks,np.concatenate(([1],pred_surv)),ls='-',c='C'+str(i)))
+	#print(i, kmf.median_)
+
+plt.xticks(np.arange(0, days_plot+0.0001, 200))
 plt.yticks(np.arange(0, 1.0001, 0.125))
-plt.xlim([0,1000])
+plt.xlim([0,days_plot])
 plt.ylim([0,1])
 plt.xlabel('Follow-up time (days)')
 plt.ylabel('Proportion surviving')
-plt.legend(['0-1: Actual','0-1: Predicted',
-	'2-3: Actual','2-3: Predicted',
-	'4-5: Actual','4-5: Predicted',
-	'6-7: Actual','6-7: Predicted',
-	'8-9: Actual','8-9: Predicted'])
-plt.title('Training set. Higher digit = shorter survival.')
-plt.show()
+plt.legend(['0: Actual','0: Predicted',
+	'1: Actual','1: Predicted',
+	'2: Actual','2: Predicted',
+	'3: Actual','3: Predicted',
+	'4: Actual','4: Predicted'])
+plt.title('Training set calibration')
+#plt.show()
 
 #Test set results
 y_pred=model.predict_proba(x_test,verbose=0)
+
+#discrimination (C-index)
+oneyr_surv=np.cumprod(y_pred[:,0:np.nonzero(breaks>365)[0][0]], axis=1)[:,-1]
+print(concordance_index(timeTest,oneyr_surv,eventTest))
+
+#discrimination of perfect model that uses actual digit as survival time predictor
+print(concordance_index(timeTest,-y_test.astype('float'),eventTest))
+
+#calibration
+plt.subplot(1, 2, 2)
 kmf = KaplanMeierFitter()
 matplotlib.style.use('default')
 actual = []
@@ -376,26 +429,28 @@ predicted = []
 for i in range(num_classes):
 	kmf.fit(timeTest[y_test==i], event_observed=eventTest[y_test==i])
 	actual.append(plt.plot(kmf.survival_function_.index.values, kmf.survival_function_.KM_estimate,ls='--',c='C'+str(i)))
-	y_pred_class_mean = np.mean(y_pred[np.where(y_test==i)[0],:],axis=0)
-	predicted.append(plt.plot(breaks,np.concatenate(([1],np.cumprod(y_pred_class_mean))),ls='-',c='C'+str(i)))
-plt.xticks(np.arange(0, 1000.0001, 200))
+	pred_surv=np.mean(np.cumprod(y_pred[y_test==i,:], axis=1),axis=0)
+	predicted.append(plt.plot(breaks,np.concatenate(([1],pred_surv)),ls='-',c='C'+str(i)))
+
+plt.xticks(np.arange(0, days_plot+0.0001, 200))
 plt.yticks(np.arange(0, 1.0001, 0.125))
-plt.xlim([0,1000])
+plt.xlim([0,days_plot])
 plt.ylim([0,1])
 plt.xlabel('Follow-up time (days)')
 plt.ylabel('Proportion surviving')
-plt.legend(['0-1: Actual','0-1: Predicted',
-	'2-3: Actual','2-3: Predicted',
-	'4-5: Actual','4-5: Predicted',
-	'6-7: Actual','6-7: Predicted',
-	'8-9: Actual','8-9: Predicted'])
-plt.title('Test set. Higher digit = shorter survival.')
+plt.legend(['0: Actual','0: Predicted',
+	'1: Actual','1: Predicted',
+	'2: Actual','2: Predicted',
+	'3: Actual','3: Predicted',
+	'4: Actual','4: Predicted'])
+plt.title('Test set calibration')
 plt.show()
 
 
 #############################################################
 #Flexible model: investigate optimal width of time intervals.
 #True survival times are drawn from Weibull distribution.
+#Described in paper.
 
 sampleSize = 5000
 
@@ -459,4 +514,6 @@ if 0:
 	plt.xlim([0,2000])
 	plt.ylim([0,1])
 	plt.show()
+
+
 
