@@ -1,4 +1,4 @@
-## Nnet-survival: A Simple Discrete-Time Survival Model using Neural Networks
+## Nnet-survival: A Scalable Discrete-Time Survival Model using Neural Networks
 
 Michael F. Gensheimer and Balasubramanian Narasimhan  
 Stanford University  
