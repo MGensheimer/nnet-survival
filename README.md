@@ -4,7 +4,7 @@ Michael F. Gensheimer and Balasubramanian Narasimhan
 Stanford University  
 mgens@stanford.edu
 
-[Link to preprint on Arxiv.org](https://arxiv.org/abs/1805.00917)
+[Link to PeerJ paper](https://peerj.com/articles/6257/)
 
 ## Selectd files
 
