@@ -5,12 +5,11 @@
 #or add that directory to Python path.
 #
 #Author: Michael Gensheimer, Stanford University, michael.gensheimer@gmail.com
-#Tested with Python version 3.6 and Keras version 2 (using TensorFlow backend)
+#Tested with Python version 3.7 and Tensorflow version 2.0.0
 
-from __future__ import print_function
 import numpy as np
-import keras.backend as K
-from keras.engine.topology import Layer
+import tensorflow.keras.backend as K
+from tensorflow.keras.layers import Layer
 
 def surv_likelihood(n_intervals):
   """Create custom Keras loss function for neural network survival model. 

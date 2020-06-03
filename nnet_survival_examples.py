@@ -6,18 +6,17 @@
 #Author: Michael Gensheimer, Stanford University, michael.gensheimer@gmail.com
 #Tested with Python version 3.6, Keras version 2 (using TensorFlow backend)
 
-from __future__ import print_function
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
-from keras.preprocessing import sequence
-from keras.models import Sequential, Model
-from keras.layers import Input, Dense, Dropout, Activation, LSTM, GRU, Embedding, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, GlobalAveragePooling1D, BatchNormalization, TimeDistributed
-from keras import optimizers, layers, regularizers
-import keras.backend as K
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.models import load_model
+from tensorflow.keras.preprocessing import sequence
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras.layers import Input, Dense, Dropout, Activation, LSTM, GRU, Embedding, Concatenate, Conv1D, GlobalMaxPooling1D, MaxPooling1D, GlobalAveragePooling1D, BatchNormalization, TimeDistributed
+from tensorflow.keras import optimizers, layers, regularizers
+import tensorflow.keras.backend as K
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.models import load_model
 import math
 from lifelines import KaplanMeierFitter
 from lifelines import CoxPHFitter
@@ -287,12 +286,8 @@ print(model.get_weights()[0])
 #Larger numbers have shorter average survival. Task: Given an image of a number, predict survival curve.
 #Described in paper.
 
-import keras
-from keras.datasets import mnist
-from keras.models import Sequential
-from keras.layers import Dense, Dropout, Flatten
-from keras.layers import Conv2D, MaxPooling2D
-
+import tensorflow.keras
+from tensorflow.keras.datasets import mnist
 num_classes = 5
 img_rows, img_cols = 28, 28
 
@@ -351,8 +346,8 @@ y_train_array=nnet_survival.make_surv_array(time,event,breaks)
 #Train model
 from numpy.random import seed
 seed(1)
-from tensorflow import set_random_seed
-set_random_seed(1)
+import tensorflow as tf
+tf.random.set_seed(1)
 
 model = Sequential()
 model.add(Conv2D(32, kernel_size=(3, 3),

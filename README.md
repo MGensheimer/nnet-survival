@@ -6,7 +6,9 @@ mgens@stanford.edu
 
 [Link to PeerJ paper](https://peerj.com/articles/6257/)
 
-## Selectd files
+Compatible with Python version 3.7+ and TensorFlow version 2.0+.
+
+## Selected files
 
 [nnet_survival.py: Contains Nnet-survival functions](nnet_survival.py)
 
@@ -23,11 +25,11 @@ Load libraries, including *nnet_survival*:
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
-from keras.models import Sequential, Model
-from keras import optimizers, layers, regularizers
-from keras.callbacks import EarlyStopping, ModelCheckpoint
-from keras.layers import Input, Dense, Activation
-from keras.models import load_model
+from tensorflow.keras.models import Sequential, Model
+from tensorflow.keras import optimizers, layers, regularizers
+from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.layers import Input, Dense, Activation
+from tensorflow.keras.models import load_model
 from lifelines import KaplanMeierFitter
 from lifelines import CoxPHFitter
 from lifelines.utils import concordance_index
