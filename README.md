@@ -6,19 +6,25 @@ mgens@stanford.edu
 
 [Link to PeerJ paper](https://peerj.com/articles/6257/)
 
-Compatible with Python version 3.7+ and TensorFlow version 2.0+.
+Keras version is compatible with Python version 3.7+ and TensorFlow version 2.0+.
+
+PyTorch version is compatible with Python version 3.10+ and PyTorch version 2.2+.
 
 ## Selected files
 
-[nnet_survival.py: Contains Nnet-survival functions](nnet_survival.py)
+[nnet_survival.py: Keras version of Nnet-survival functions](nnet_survival.py)
 
 [nnet_survival_examples.py: Examples of use of Nnet-survival](nnet_survival_examples.py)
+
+[nnet_survival_pytorch.py: PyTorch version of Nnet-survival functions](nnet_survival_pytorch.py)
+
+[nnet_survival_pytorch_example.ipynb: Simple example of use of PyTorch version of Nnet-survival](nnet_survival_pytorch_example.ipynb)
 
 [support_study.py: Application of Nnet-survival to SUPPORT study data](support_study.py)
 
 [Issues with Brown et al. 1997 loss function](brown1997_loss_function_example.md)
 
-## Example of use
+## Example of use (Keras version)
 
 Load libraries, including *nnet_survival*:
 ```python
